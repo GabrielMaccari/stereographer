@@ -283,7 +283,9 @@ class StereographerApp(QMainWindow):
                     else:
                         file = pandas.read_excel(path, engine=eng)
                     
-                    #Remove colunas e linhas em branco
+                    file.columns = file.columns.astype(str)
+                    
+                    #Remove colunas e linhas em branco (no caso das colunas, apenas se elas não tiverem cabeçalho)
                     remove_cols = [col for col in file.columns if 'Unnamed' in col]
                     file.drop(remove_cols, axis='columns', inplace=True)
                     file.replace(r'^\s*$', numpy.nan, inplace=True, regex=True)
@@ -678,5 +680,3 @@ if __name__ == '__main__':
     window = StereographerApp()
     window.show()
     app.exec()
-    
-# TODO Dar um jeito de acrescentar múltiplos elementos ao mesmo estereograma (ex: polos de falha e densidade de polos de xistosidade na mesma figura)

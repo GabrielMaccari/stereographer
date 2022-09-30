@@ -2,7 +2,7 @@
 """
 Created on Wed Sep 14 13:40:59 2022
 
-@author: gabri
+@author: Gabriel Maccari
 """
 
 from os import getcwd, path, makedirs

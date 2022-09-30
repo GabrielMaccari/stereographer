@@ -1,0 +1,3 @@
+Virtual environment: stereographer (C:\Users\gabri\Documents\Python Virtual Environments\stereographer\Scripts\activate)
+
+pyinstaller "C:\Users\gabri\OneDrive\LabMap\Stereographer\stereographer-rep\StereographerApp.py" --distpath="C:\Users\gabri\OneDrive\LabMap\Stereographer" --upx-dir="C:\Users\gabri\OneDrive\LabMap\lib\upx-3.96-win64" --clean --onefile --noconsole --icon="C:\Users\gabri\OneDrive\LabMap\Stereographer\stereographer-rep\icons\windowIcon.ico"
