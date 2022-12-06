@@ -58,21 +58,43 @@ class PlotWindow(QMainWindow):
             plt.savefig(fig_name, dpi=150, transparent=True, format='png')
             return fig_name
         except:
-            plt.savefig('C:/Users/Public/Pictures/plot.png', dpi=150, transparent=True, format='png')
+            plt.savefig(
+                'C:/Users/Public/Pictures/plot.png',
+                dpi=150,
+                transparent=True,
+                format='png'
+            )
             return 'C:/Users/Public/Pictures/plot.png'
     
     def save_plot(self):
         try:
-            outFile = QFileDialog.getSaveFileName(self, caption='Salvar arquivo', directory=getcwd(), filter='PNG (*.png);;JPEG (*.jpg);; SVG (*.svg)')
+            outFile = QFileDialog.getSaveFileName(
+                self,
+                caption='Salvar arquivo',
+                directory=getcwd(),
+                filter='PNG (*.png);;JPEG (*.jpg);; SVG (*.svg)'
+            )
             filePath = outFile[0]
             if filePath!='':
                 output_format = filePath[-3:]
-                self.plot.savefig(filePath, dpi=300, transparent=True, format=output_format)
-                msg = QMessageBox(parent=self, text='Arquivo salvo com sucesso!')
+                self.plot.savefig(
+                    filePath,
+                    dpi=300,
+                    transparent=True,
+                    format=output_format
+                )
+                msg = QMessageBox(
+                    parent=self,
+                    text='Arquivo salvo com sucesso!'
+                )
                 msg.setWindowTitle('Sucesso')
                 msg.exec()
         except Exception as e:
-            msg = QMessageBox(parent=self, text='Não foi possível salvar o stereonet no caminho especificado.\n\n'+str(e))
+            msg = QMessageBox(
+                parent=self,
+                text='Não foi possível salvar o stereonet no caminho '
+                     'especificado.\n\n'+str(e)
+            )
             msg.setWindowTitle('Erro')
             msg.setIcon(QMessageBox.Icon.Critical)
             msg.exec()
