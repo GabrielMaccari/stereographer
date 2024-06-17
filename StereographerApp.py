@@ -5,14 +5,6 @@ Created on Fri Sep  9 10:45:44 2022
 @author: Gabriel Maccari
 """
 
-'''
-numpy==1.23.4
-pandas==1.5.0
-matplotlib==3.5.3
-mplstereonet==0.6.2
-PyQt6==6.4.0
-'''
-
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QInputDialog,
                              QPushButton, QLabel, QTableWidget,
                              QTableWidgetItem, QComboBox, QCheckBox,
