@@ -34,7 +34,7 @@ class StereographerApp(QMainWindow):
             'Planos: Strike/Dip': ['Strike', 'Dip'],
             'Planos: Dip direction/Dip': ['Dip direction', 'Dip'],
             'Linhas: Plunge/Trend': ['Trend', 'Plunge'],
-            'Rakes: Strike/Dip/Pitch': ['Strike', 'Dip', 'Pitch']
+            'Linhas em planos: Strike/Dip/Pitch': ['Strike', 'Dip', 'Pitch']
         }
         self.cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds',
                       'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
@@ -433,7 +433,7 @@ class StereographerApp(QMainWindow):
         self.orientationColumn_cmb.setEnabled(True)
         self.dipColumn_lbl.setEnabled(True)
         self.dipColumn_cmb.setEnabled(True)
-        if self.measurementType_cmb.currentText().startswith('Rakes'):
+        if self.measurementType_cmb.currentText().startswith('Linhas em planos'):
             self.pitchColumn_lbl.setEnabled(True)
             self.pitchColumn_cmb.setEnabled(True)
 
@@ -493,7 +493,7 @@ class StereographerApp(QMainWindow):
             data = pandas.DataFrame()
             data['c1'] = self.file[self.orientationColumn_cmb.currentText()]
             data['c2'] = self.file[self.dipColumn_cmb.currentText()]
-            if msrType.startswith('Rakes'):
+            if msrType.startswith('Linhas em planos'):
                 data['c3'] = self.file[self.pitchColumn_cmb.currentText()]
             data.dropna(how='all', axis='index', inplace=True)
         except:
@@ -502,13 +502,13 @@ class StereographerApp(QMainWindow):
         try:
             # Define o número de linhas da tabela
             rows = (max([data.c1.size, data.c2.size, data.c3.size])
-                    if msrType.startswith('Rakes')
+                    if msrType.startswith('Linhas em planos')
                     else max([data.c1.size, data.c2.size]))
             self.data_tbl.setRowCount(rows)
 
             # Preenche a tabela
             column_data = ([data.c1, data.c2, data.c3]
-                           if msrType.startswith('Rakes')
+                           if msrType.startswith('Linhas em planos')
                            else [data.c1, data.c2])
             for column, c in enumerate(column_data):
                 for row, i in enumerate(c):
@@ -579,7 +579,7 @@ class StereographerApp(QMainWindow):
             self.plotDensity_chk.setText('Plotar densidade de linhas')
             self.plotDensity_chk.setChecked(False)
             self.plotDensity_chk.setEnabled(True)
-        elif msrType.startswith('Rakes'):
+        elif msrType.startswith('Linhas em planos'):
             self.plotGreatCircles_chk.setChecked(True)
             self.plotGreatCircles_chk.setEnabled(True)
             self.plotPoles_chk.setChecked(True)
@@ -759,7 +759,7 @@ class StereographerApp(QMainWindow):
 
                 azimuths = self.table[columns[0]].values
                 angles = self.table[columns[1]].values
-                if msrType.startswith('Rakes'):
+                if msrType.startswith('Linhas em planos'):
                     pitches = self.table[columns[2]].values
 
                 if msrType.startswith('Planos: Dip direction'):
@@ -770,7 +770,7 @@ class StereographerApp(QMainWindow):
                         figsize=[6, 6], projection=projection
                     )
 
-                if msrType.startswith('Rakes'):
+                if msrType.startswith('Linhas em planos'):
                     self.ax.plane(azimuths, angles, color=greatCircleColor)
                     self.ax.rake(azimuths, angles, pitches, color=poleColor, marker=poleMarker)
                     if plotDensity:
