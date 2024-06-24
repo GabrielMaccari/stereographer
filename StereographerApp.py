@@ -26,7 +26,7 @@ class StereographerApp(QMainWindow):
 
         super().__init__()
 
-        self.setWindowTitle('Simple Stereographer')
+        self.setWindowTitle('Stereographer')
         self.setWindowIcon(QIcon('icons/windowIcon.ico'))
 
         # Listas de opções para as combo boxes
@@ -39,15 +39,16 @@ class StereographerApp(QMainWindow):
         self.cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds',
                       'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
                       'GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn',
-                      'viridis', 'plasma', 'inferno', 'magma', 'cividis',
-                      'binary', 'gist_yarg', 'gist_gray', 'gray', 'bone',
-                      'pink', 'spring', 'summer', 'autumn', 'winter', 'cool',
-                      'Wistia', 'hot', 'afmhot', 'gist_heat', 'copper',
-                      'PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu', 'RdYlBu',
-                      'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic',
-                      'twilight', 'twilight_shifted', 'hsv']
+                      'viridis_r', 'plasma_r', 'inferno_r', 'magma_r', 'cividis_r',
+                      'hot_r', 'afmhot_r', 'gist_heat_r', 'copper_r']
         self.projections = {'Equal area (Schmidt)': 'equal_area',
                             'Equal angle (Wulff)': 'equal_angle'}
+        self.markers = {
+            'Círculo': 'o',
+            'Triângulo': '^',
+            'Quadrado': 's',
+            'Losango': 'D'
+        }
 
         # variáveis gerais
         self.folder = os_getcwd()
@@ -104,7 +105,7 @@ class StereographerApp(QMainWindow):
         self.pitchColumn_cmb.currentTextChanged.connect(self.update_table)
         self.pitchColumn_cmb.setEnabled(False)
 
-        y, h, w = y + h + 5, 200, 355
+        y, h, w = y + h + 5, 200, 357
         y2 = y - 1
         self.data_tbl = QTableWidget(self)
         self.data_tbl.setGeometry(x, y, w, h)
@@ -117,28 +118,28 @@ class StereographerApp(QMainWindow):
         self.data_tbl.itemChanged.connect(self.check_table_data)
 
         self.addRow_btn = QPushButton('', self)
-        self.addRow_btn.setGeometry(w + 10, y - 1, 30, 30)
+        self.addRow_btn.setGeometry(w + 10, y - 1, 28, 28)
         self.addRow_btn.setIcon(QIcon('icons/add.png'))
         self.addRow_btn.setToolTip('Adicionar uma linha')
         self.addRow_btn.clicked.connect(self.add_row)
 
-        y2 += 35
+        y2 += 33
         self.deleteRow_btn = QPushButton('', self)
-        self.deleteRow_btn.setGeometry(w + 10, y2, 30, 30)
+        self.deleteRow_btn.setGeometry(w + 10, y2, 28, 28)
         self.deleteRow_btn.setIcon(QIcon('icons/delete.png'))
         self.deleteRow_btn.setToolTip('Remover linha selecionada')
         self.deleteRow_btn.clicked.connect(self.delete_row)
 
-        y2 += 35
+        y2 += 33
         self.clear_btn = QPushButton('', self)
-        self.clear_btn.setGeometry(w + 10, y2, 30, 30)
+        self.clear_btn.setGeometry(w + 10, y2, 28, 28)
         self.clear_btn.setIcon(QIcon('icons/clear.png'))
         self.clear_btn.setToolTip('Remover todas as linhas')
         self.clear_btn.clicked.connect(self.clear_table)
 
-        y2 += 35
+        y2 += 33
         self.reset_btn = QPushButton('', self)
-        self.reset_btn.setGeometry(w + 10, y2, 30, 30)
+        self.reset_btn.setGeometry(w + 10, y2, 28, 28)
         self.reset_btn.setIcon(QIcon('icons/refresh.png'))
         self.reset_btn.setToolTip('Reiniciar a tabela com os dados do arquivo '
                                   'carregado')
@@ -150,13 +151,14 @@ class StereographerApp(QMainWindow):
         self.plotGreatCircles_chk.setGeometry(x, y, w, h)
         self.plotGreatCircles_chk.setChecked(True)
         self.plotGreatCircles_chk.stateChanged.connect(
-            lambda: self.enable_color_selection(self.plotGreatCircles_chk)
+            lambda: self.enable_style_selection(self.plotGreatCircles_chk)
         )
 
-        self.greatCircleColor_lbl = QLabel('Cor dos grandes círculos:', self)
-        self.greatCircleColor_lbl.setGeometry(x + w, y, w, h)
+        y, h, w = y + h + 5, 20, 195
+        self.greatCircleColor_lbl = QLabel('Cor do traço:', self)
+        self.greatCircleColor_lbl.setGeometry(x+20, y, 70, h)
         self.greatCircleColor_btn = QPushButton('#000000', self)
-        self.greatCircleColor_btn.setGeometry(x + w + 140, y, 55, h)
+        self.greatCircleColor_btn.setGeometry(x+25+70, y, 55, h)
         self.greatCircleColor_btn.clicked.connect(
             lambda: self.select_color(self.greatCircleColor_btn)
         )
@@ -165,14 +167,24 @@ class StereographerApp(QMainWindow):
         self.plotPoles_chk = QCheckBox('Plotar polos/linhas', self)
         self.plotPoles_chk.setGeometry(x, y, w, h)
         self.plotPoles_chk.stateChanged.connect(
-            lambda: self.enable_color_selection(self.plotPoles_chk)
+            lambda: self.enable_style_selection(self.plotPoles_chk)
         )
 
-        self.poleColor_lbl = QLabel('Cor dos polos:', self)
-        self.poleColor_lbl.setGeometry(x + w, y, w, h)
+        y, h = y + h + 0, 20
+        self.poleMarker_lbl = QLabel('Símbolo:', self)
+        self.poleMarker_lbl.setGeometry(x+20, y, 50, h)
+        self.poleMarker_lbl.setEnabled(False)
+        self.poleMarker_cmb = QComboBox(self)
+        self.poleMarker_cmb.setGeometry(x+25+50, y, 100, h)
+        self.poleMarker_cmb.addItems(self.markers)
+        self.poleMarker_cmb.setEnabled(False)
+
+        y, h = y + h + 0, 20
+        self.poleColor_lbl = QLabel('Cor do símbolo:', self)
+        self.poleColor_lbl.setGeometry(x+20, y, 90, h)
         self.poleColor_lbl.setEnabled(False)
         self.poleColor_btn = QPushButton('#000000', self)
-        self.poleColor_btn.setGeometry(x + w + 140, y, 55, h)
+        self.poleColor_btn.setGeometry(x + 90 + 25, y, 55, h)
         self.poleColor_btn.clicked.connect(
             lambda: self.select_color(self.poleColor_btn)
         )
@@ -182,14 +194,15 @@ class StereographerApp(QMainWindow):
         self.plotDensity_chk = QCheckBox('Plotar densidade de polos', self)
         self.plotDensity_chk.setGeometry(x, y, w, h)
         self.plotDensity_chk.stateChanged.connect(
-            lambda: self.enable_color_selection(self.plotDensity_chk)
+            lambda: self.enable_style_selection(self.plotDensity_chk)
         )
 
-        self.densityColors_lbl = QLabel('Cores de densidade:', self)
-        self.densityColors_lbl.setGeometry(x + w, y, w, h)
+        y, h = y + h + 0, 20
+        self.densityColors_lbl = QLabel('Rampa de cores:', self)
+        self.densityColors_lbl.setGeometry(x+20, y, 90, h)
         self.densityColors_lbl.setEnabled(False)
         self.densityColors_cmb = QComboBox(self)
-        self.densityColors_cmb.setGeometry(x + w + 120, y, 75, h)
+        self.densityColors_cmb.setGeometry(x+25+90, y, 95, h)
         self.densityColors_cmb.addItems(self.cmaps)
         self.densityColors_cmb.setEnabled(False)
 
@@ -227,8 +240,7 @@ class StereographerApp(QMainWindow):
         self.addToStereonet_btn = QPushButton('', self)
         self.addToStereonet_btn.setGeometry(365, y, h, h)
         self.addToStereonet_btn.setIcon(QIcon('icons/add2.png'))
-        self.addToStereonet_btn.setToolTip('Adicionar elementos ao stereonet '
-                                           'atual')
+        self.addToStereonet_btn.setToolTip('Adicionar elementos ao stereonet atual')
         self.addToStereonet_btn.setEnabled(False)
         self.addToStereonet_btn.clicked.connect(
             lambda: self.plot_stereonet(False)
@@ -244,7 +256,7 @@ class StereographerApp(QMainWindow):
         self.setMinimumSize(400, y)
         self.setMaximumSize(400, y)
 
-    def enable_color_selection(self, widget):
+    def enable_style_selection(self, widget):
         state = widget.isChecked()
 
         if widget == self.plotGreatCircles_chk:
@@ -253,6 +265,8 @@ class StereographerApp(QMainWindow):
         elif widget == self.plotPoles_chk:
             self.poleColor_lbl.setEnabled(state)
             self.poleColor_btn.setEnabled(state)
+            self.poleMarker_lbl.setEnabled(state)
+            self.poleMarker_cmb.setEnabled(state)
         elif widget == self.plotDensity_chk:
             self.densityColors_lbl.setEnabled(state)
             self.densityColors_cmb.setEnabled(state)
@@ -260,7 +274,8 @@ class StereographerApp(QMainWindow):
             if state == False:
                 self.showColorbar_chk.setChecked(state)
 
-    def select_color(self, widget):
+    @staticmethod
+    def select_color(widget):
         colorObject = QColorDialog.getColor()
         color = colorObject.name()
         widget.setStyleSheet("color: %s" % (color))
@@ -733,6 +748,7 @@ class StereographerApp(QMainWindow):
                 plotDensity = self.plotDensity_chk.isChecked()
                 greatCircleColor = self.greatCircleColor_btn.text()
                 poleColor = self.poleColor_btn.text()
+                poleMarker = self.markers[self.poleMarker_cmb.currentText()]
                 density_cmap = self.densityColors_cmb.currentText()
                 title = self.title_edt.text()
                 showGrid = self.showGrid_chk.isChecked()
@@ -756,7 +772,7 @@ class StereographerApp(QMainWindow):
 
                 if msrType.startswith('Rakes'):
                     self.ax.plane(azimuths, angles, color=greatCircleColor)
-                    self.ax.rake(azimuths, angles, pitches, color=poleColor)
+                    self.ax.rake(azimuths, angles, pitches, color=poleColor, marker=poleMarker)
                     if plotDensity:
                         density = self.ax.density_contourf(
                             azimuths,
@@ -767,7 +783,7 @@ class StereographerApp(QMainWindow):
                         )
                 elif msrType.startswith('Linhas'):
                     if plotPoles:
-                        self.ax.line(angles, azimuths, color=poleColor)
+                        self.ax.line(angles, azimuths, color=poleColor, marker=poleMarker)
                     if plotDensity:
                         density = self.ax.density_contourf(
                             angles,
@@ -779,7 +795,7 @@ class StereographerApp(QMainWindow):
                     if plotGreatCircles:
                         self.ax.plane(azimuths, angles, color=greatCircleColor)
                     if plotPoles:
-                        self.ax.pole(azimuths, angles, color=poleColor)
+                        self.ax.pole(azimuths, angles, color=poleColor, marker=poleMarker)
                     if plotDensity:
                         density = self.ax.density_contourf(
                             azimuths,
