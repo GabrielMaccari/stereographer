@@ -439,11 +439,12 @@ class StereographerApp(QMainWindow):
         """
 
         # Define o intervalo dos dados com base no tipo de medida recebido.
-        if measurement == 'Strike' or measurement == 'Dip direction' \
-                or measurement == 'Trend':
-            max_value = 360
+        if measurement in ('Strike', 'Dip direction', 'Trend', 'Bearing'):
+            min_value, max_value = 0, 360
+        elif measurement in ('Dip', 'Plunge'):
+            min_value, max_value = 0, 90
         else:
-            max_value = 90
+            min_value, max_value = -180, 180
 
         # Armazena em uma lista todas as colunas do DataFrame que podem ser
         # convertidas para float e estão no intervalo definido
@@ -452,7 +453,7 @@ class StereographerApp(QMainWindow):
         for c in columns:
             try:
                 self.file[c] = self.file[c].astype(float, errors='raise')
-                if self.file[c].dropna().between(0, max_value).all() \
+                if self.file[c].dropna().between(min_value, max_value).all() \
                         and not self.file[c].dropna().empty:
                     msr_columns.append(c)
             except:
@@ -839,6 +840,7 @@ class StereographerApp(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys_argv)
+    app.setStyle("windowsvista")
     window = StereographerApp()
     window.show()
     app.exec()

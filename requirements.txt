@@ -1,5 +1,6 @@
-numpy==1.23.4
-pandas==1.5.0
-matplotlib==3.5.3
-mplstereonet==0.6.2
-PyQt6==6.4.0
+numpy
+pandas
+openpyxl
+matplotlib
+mplstereonet
+PyQt6
