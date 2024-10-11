@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Sep 14 13:40:59 2022
-
 @author: Gabriel Maccari
 """
 

@@ -1,25 +1,25 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Sep  9 10:45:44 2022
-
 @author: Gabriel Maccari
 """
-
-from PyQt6.QtWidgets import (QMainWindow, QApplication, QInputDialog,
-                             QPushButton, QLabel, QTableWidget,
-                             QTableWidgetItem, QComboBox, QCheckBox,
-                             QColorDialog, QFileDialog, QMessageBox, QLineEdit)
-from PyQt6.QtGui import QIcon, QFont
-from sys import argv as sys_argv
-from os import getcwd as os_getcwd
 import pandas
 import numpy
 import matplotlib
-import matplotlib.pyplot as plt
 import mplstereonet
+import matplotlib.pyplot as plt
+from PyQt6.QtWidgets import (QMainWindow, QApplication, QInputDialog, QPushButton, QLabel, QTableWidget,
+                             QTableWidgetItem, QComboBox, QCheckBox, QColorDialog, QFileDialog, QMessageBox, QLineEdit)
+from PyQt6.QtGui import QIcon, QFont
+from sys import argv as sys_argv
+from os import getcwd as os_getcwd
+from matplotlib.lines import Line2D
+from icecream import ic
+
 from PlotWindow import PlotWindow
 
 matplotlib.use("svg")
+
 
 class StereographerApp(QMainWindow):
     def __init__(self):
@@ -74,9 +74,7 @@ class StereographerApp(QMainWindow):
         self.measurementType_cmb = QComboBox(self)
         self.measurementType_cmb.setGeometry(x + w, y, 400 - w - 10, h)
         self.measurementType_cmb.addItems(self.measurementType_dict.keys())
-        self.measurementType_cmb.currentTextChanged.connect(
-            self.measurementType_selected
-        )
+        self.measurementType_cmb.currentTextChanged.connect(self.measurementType_selected)
 
         y, h = y + h + 5, 22
         self.orientationColumn_lbl = QLabel('Strike:', self)
@@ -109,12 +107,8 @@ class StereographerApp(QMainWindow):
         y2 = y - 1
         self.data_tbl = QTableWidget(self)
         self.data_tbl.setGeometry(x, y, w, h)
-        self.data_tbl.setColumnCount(
-            len(self.measurementType_dict['Planos: Strike/Dip'])
-        )
-        self.data_tbl.setHorizontalHeaderLabels(
-            self.measurementType_dict['Planos: Strike/Dip']
-        )
+        self.data_tbl.setColumnCount(len(self.measurementType_dict['Planos: Strike/Dip']))
+        self.data_tbl.setHorizontalHeaderLabels(self.measurementType_dict['Planos: Strike/Dip'])
         self.data_tbl.itemChanged.connect(self.check_table_data)
 
         self.addRow_btn = QPushButton('', self)
@@ -141,8 +135,7 @@ class StereographerApp(QMainWindow):
         self.reset_btn = QPushButton('', self)
         self.reset_btn.setGeometry(w + 10, y2, 28, 28)
         self.reset_btn.setIcon(QIcon('icons/refresh.png'))
-        self.reset_btn.setToolTip('Reiniciar a tabela com os dados do arquivo '
-                                  'carregado')
+        self.reset_btn.setToolTip('Reiniciar a tabela com os dados do arquivo carregado')
         self.reset_btn.clicked.connect(self.refresh_table)
         self.reset_btn.setEnabled(False)
 
@@ -150,34 +143,36 @@ class StereographerApp(QMainWindow):
         self.plotGreatCircles_chk = QCheckBox('Plotar grandes círculos', self)
         self.plotGreatCircles_chk.setGeometry(x, y, w, h)
         self.plotGreatCircles_chk.setChecked(True)
-        self.plotGreatCircles_chk.stateChanged.connect(
-            lambda: self.enable_style_selection(self.plotGreatCircles_chk)
-        )
+        self.plotGreatCircles_chk.stateChanged.connect(lambda: self.enable_style_selection(self.plotGreatCircles_chk))
 
         y, h, w = y + h + 5, 20, 195
         self.greatCircleColor_lbl = QLabel('Cor do traço:', self)
         self.greatCircleColor_lbl.setGeometry(x+20, y, 70, h)
         self.greatCircleColor_btn = QPushButton('#000000', self)
         self.greatCircleColor_btn.setGeometry(x+25+70, y, 55, h)
-        self.greatCircleColor_btn.clicked.connect(
-            lambda: self.select_color(self.greatCircleColor_btn)
-        )
+        self.greatCircleColor_btn.clicked.connect(lambda: self.select_color(self.greatCircleColor_btn))
 
         y, h = y + h + 0, 20
         self.plotPoles_chk = QCheckBox('Plotar polos/linhas', self)
         self.plotPoles_chk.setGeometry(x, y, w, h)
-        self.plotPoles_chk.stateChanged.connect(
-            lambda: self.enable_style_selection(self.plotPoles_chk)
-        )
+        self.plotPoles_chk.stateChanged.connect(lambda: self.enable_style_selection(self.plotPoles_chk))
 
         y, h = y + h + 0, 20
         self.poleMarker_lbl = QLabel('Símbolo:', self)
         self.poleMarker_lbl.setGeometry(x+20, y, 50, h)
         self.poleMarker_lbl.setEnabled(False)
         self.poleMarker_cmb = QComboBox(self)
-        self.poleMarker_cmb.setGeometry(x+25+50, y, 100, h)
+        self.poleMarker_cmb.setGeometry(x+20+5+50, y, 100, h)
         self.poleMarker_cmb.addItems(self.markers)
         self.poleMarker_cmb.setEnabled(False)
+
+        self.legendLabel_lbl = QLabel('Rótulo:', self)
+        self.legendLabel_lbl.setGeometry(x+20+50+5+100+20, y, 40, h)
+        self.legendLabel_lbl.setEnabled(False)
+        self.legendLabel_edt = QLineEdit(self)
+        self.legendLabel_edt.setGeometry(x+20+50+5+100+20+40+5, y, 100, h)
+        self.legendLabel_edt.setText("Linha/Polo")
+        self.legendLabel_edt.setEnabled(False)
 
         y, h = y + h + 0, 20
         self.poleColor_lbl = QLabel('Cor do símbolo:', self)
@@ -185,17 +180,13 @@ class StereographerApp(QMainWindow):
         self.poleColor_lbl.setEnabled(False)
         self.poleColor_btn = QPushButton('#000000', self)
         self.poleColor_btn.setGeometry(x + 90 + 25, y, 55, h)
-        self.poleColor_btn.clicked.connect(
-            lambda: self.select_color(self.poleColor_btn)
-        )
+        self.poleColor_btn.clicked.connect(lambda: self.select_color(self.poleColor_btn))
         self.poleColor_btn.setEnabled(False)
 
         y, h = y + h + 0, 20
         self.plotDensity_chk = QCheckBox('Plotar densidade de polos', self)
         self.plotDensity_chk.setGeometry(x, y, w, h)
-        self.plotDensity_chk.stateChanged.connect(
-            lambda: self.enable_style_selection(self.plotDensity_chk)
-        )
+        self.plotDensity_chk.stateChanged.connect(lambda: self.enable_style_selection(self.plotDensity_chk))
 
         y, h = y + h + 0, 20
         self.densityColors_lbl = QLabel('Rampa de cores:', self)
@@ -207,8 +198,7 @@ class StereographerApp(QMainWindow):
         self.densityColors_cmb.setEnabled(False)
 
         y, h = y + h + 0, 20
-        self.showColorbar_chk = QCheckBox('Mostrar escala das cores de '
-                                          'densidade', self)
+        self.showColorbar_chk = QCheckBox('Mostrar escala das cores de densidade', self)
         self.showColorbar_chk.setGeometry(x + 20, y, 390, h)
         self.showColorbar_chk.setEnabled(False)
 
@@ -233,22 +223,17 @@ class StereographerApp(QMainWindow):
         self.plotStereonet_btn = QPushButton('Gerar novo steorenet', self)
         self.plotStereonet_btn.setGeometry(x, y, 355, h)
         self.plotStereonet_btn.setEnabled(False)
-        self.plotStereonet_btn.clicked.connect(
-            lambda: self.plot_stereonet(True)
-        )
+        self.plotStereonet_btn.clicked.connect(lambda: self.plot_stereonet(True))
 
         self.addToStereonet_btn = QPushButton('', self)
         self.addToStereonet_btn.setGeometry(365, y, h, h)
         self.addToStereonet_btn.setIcon(QIcon('icons/add2.png'))
         self.addToStereonet_btn.setToolTip('Adicionar elementos ao stereonet atual')
         self.addToStereonet_btn.setEnabled(False)
-        self.addToStereonet_btn.clicked.connect(
-            lambda: self.plot_stereonet(False)
-        )
+        self.addToStereonet_btn.clicked.connect(lambda: self.plot_stereonet(False))
 
         y, h = y + h, 20
-        self.copyrightLabel = QLabel('© 2022 Gabriel Maccari '
-                                     '<gabriel.maccari@hotmail.com>', self)
+        self.copyrightLabel = QLabel('© 2022 Gabriel Maccari <gabriel.maccari@hotmail.com>', self)
         self.copyrightLabel.setGeometry(5, y, 340, h)
         self.copyrightLabel.setFont(QFont('Sans Serif', 8))
 
@@ -267,11 +252,13 @@ class StereographerApp(QMainWindow):
             self.poleColor_btn.setEnabled(state)
             self.poleMarker_lbl.setEnabled(state)
             self.poleMarker_cmb.setEnabled(state)
+            self.legendLabel_lbl.setEnabled(state)
+            self.legendLabel_edt.setEnabled(state)
         elif widget == self.plotDensity_chk:
             self.densityColors_lbl.setEnabled(state)
             self.densityColors_cmb.setEnabled(state)
             self.showColorbar_chk.setEnabled(state)
-            if state == False:
+            if state is False:
                 self.showColorbar_chk.setChecked(state)
 
     @staticmethod
@@ -286,15 +273,13 @@ class StereographerApp(QMainWindow):
         self.grid_cmb.setEnabled(state)
 
     def open_file(self):
-        """Exibe um diálogo para seleção de um arquivo (xlsx, xlsm, csv, ods) e
-        cria um DataFrame (StereographerApp.file) para conter os dados de
-        entrada. Elimina linhas e colunas em branco no DataFrame."""
+        """Exibe um diálogo para seleção de um arquivo (xlsx, xlsm, csv, ods) e cria um DataFrame (StereographerApp.file)
+        para conter os dados de entrada. Elimina linhas e colunas em branco no DataFrame."""
 
         self.fileOpened = False
-        # Abre um diálogo para seleção do arquivo. Os formatos suportados são
-        # xlsx, xlsm, csv e ods
 
         try:
+            # Abre um diálogo para seleção do arquivo. Os formatos suportados são xlsx, xlsm, csv e ods
             inFile = QFileDialog.getOpenFileName(
                 self,
                 caption='Selecione uma tabela contendo os dados de entrada.',
@@ -307,11 +292,7 @@ class StereographerApp(QMainWindow):
             path = inFile[0]
         # Se não der para abrir o arquivo, mostra uma mensagem com o erro
         except Exception as e:
-            msg = QMessageBox(
-                parent=self,
-                text='Não foi possível abrir o arquivo selecionado.\n\n'
-                     'ERRO: %s' % (str(e))
-            )
+            msg = QMessageBox(parent=self, text=f'Não foi possível abrir o arquivo selecionado.\n\nERRO: {e}')
             msg.setWindowTitle('Erro')
             msg.setIcon(QMessageBox.Icon.Critical)
             msg.exec()
@@ -326,38 +307,28 @@ class StereographerApp(QMainWindow):
                     self.fileOpened = True
                 # Cria um dataframe a partir de um arquivo xlsx, xlsm ou ods
                 else:
-                    # Engine odf para arquivos ods e openpyxl para arquivos do
-                    # excel
+                    # Engine odf para arquivos ods e openpyxl para arquivos do excel
                     eng = ('odf' if path.endswith('.ods') else 'openpyxl')
                     wholeFile = pandas.ExcelFile(path, engine=eng)
                     sheetNames = wholeFile.sheet_names
-                    # Caso o arquivo tenha mais de uma planilha, mostra um
-                    # diálogo com uma comboBox para selecionar a planilha dos
-                    # dados
+                    # Caso o arquivo tenha mais de uma planilha, mostra um diálogo com uma comboBox para selecionar a
+                    # planilha dos dados
                     if len(sheetNames) > 1:
-                        sheet, ok = QInputDialog.getItem(
-                            self,
-                            'Selecionar aba',
-                            'Planilha:',
-                            sheetNames
-                        )
-                        # Se o usuário apertar ok no diálogo, cria o dataframe a
-                        # partir da planilha selecionada
+                        sheet, ok = QInputDialog.getItem(self, 'Selecionar aba', 'Planilha:', sheetNames)
+                        # Se o usuário apertar ok no diálogo, cria o dataframe a partir da planilha selecionada
                         if ok:
                             file = wholeFile.parse(sheet_name=sheet)
                         # Caso o usuário aperte em cancelar ou fechar o diálogo,
                         # cancela a leitura do arquivo
                         else:
                             return
-                    # Se o arquivo tiver apenas uma planilha, cria o dataframe
-                    # com ela
+                    # Se o arquivo tiver apenas uma planilha, cria o dataframe com ela
                     else:
                         file = pandas.read_excel(path, engine=eng)
 
                     file.columns = file.columns.astype(str)
 
-                    # Remove colunas e linhas em branco (no caso das colunas,
-                    # apenas se elas não tiverem cabeçalho)
+                    # Remove colunas e linhas em branco (no caso das colunas, apenas se elas não tiverem cabeçalho)
                     drop_c = [col for col in file.columns if 'Unnamed' in col]
                     file.drop(drop_c, axis='columns', inplace=True)
                     file.replace(r'^\s*$', numpy.nan, inplace=True, regex=True)
@@ -365,13 +336,11 @@ class StereographerApp(QMainWindow):
 
                     self.fileOpened = True
 
-            # Caso ocorra algum erro na leitura do arquivo, exibe uma mensagem
-            # com o erro e esvazia as combo boxes
+            # Caso ocorra algum erro na leitura do arquivo, exibe uma mensagem com o erro e esvazia as combo boxes
             except Exception as e:
                 self.fileOpened = False
                 self.reset_btn.setEnabled(False)
-                msg = QMessageBox(parent=self, text='Não foi possível abrir o '
-                                                    'arquivo.\n\n' + str(e))
+                msg = QMessageBox(parent=self, text='Não foi possível abrir o arquivo.\n\n' + str(e))
                 msg.setWindowTitle('Erro')
                 msg.setIcon(QMessageBox.Icon.Critical)
                 msg.exec()
@@ -381,12 +350,10 @@ class StereographerApp(QMainWindow):
                 self.file_lbl.setText('Não foi possível abrir o arquivo.')
                 self.file_lbl.setStyleSheet('QLabel {color: red}')
 
-        # Instruções a serem seguidas quando um arquivo é aberto e o DataFrame é
-        # criado com sucesso
+        # Instruções a serem seguidas quando um arquivo é aberto e o DataFrame é criado com sucesso
         if self.fileOpened:
             self.file = file
-            # Atualiza as comboBoxes e, consequentemente, atualiza a tabela da
-            # interface (self.update_columns())
+            # Atualiza as comboBoxes e, consequentemente, atualiza a tabela da interface (self.update_columns())
             self.update_combo_boxes()
             self.reset_btn.setEnabled(True)
             self.file_lbl.setText('Arquivo carregado com sucesso.')
@@ -397,8 +364,7 @@ class StereographerApp(QMainWindow):
         (StereographerApp.file) que forem apropriadas para medidas (numéricas e
         dentro do intervalo esperado)."""
 
-        # Seleciona todas as colunas de medidas no arquivo (numéricas e dentro
-        # do intervalo 360 ou 0-90)
+        # Seleciona todas as colunas de medidas no arquivo (numéricas e dentro do intervalo 360 ou 0-90)
         combos = [
             self.orientationColumn_cmb,
             self.dipColumn_cmb,
@@ -406,8 +372,7 @@ class StereographerApp(QMainWindow):
         ]
         msr_types = ['Strike', 'Dip', 'Pitch']
         msr_columns = [self.get_measurement_columns('Strike')]
-        # Caso não tenha nenhuma coluna apropriada, exibe uma mensagem e cancela
-        # a operação
+        # Caso não tenha nenhuma coluna apropriada, exibe uma mensagem e cancela a operação
         if len(msr_columns) == 0:
             msg = QMessageBox(
                 parent=self,
@@ -424,8 +389,7 @@ class StereographerApp(QMainWindow):
             combos[i].clear()
             items = self.get_measurement_columns(msr_types[i])
             combos[i].addItems(items)
-            # Para a comboBox de pitch, usa a segunda coluna adquirida, pra não
-            # ficar igual ao dip de início
+            # Para a comboBox de pitch, usa a segunda coluna adquirida, pra não ficar igual ao dip de início
             if i == 2 and len(items) > 1:
                 combos[i].setCurrentIndex(1)
         # Habilita as combo boxes das colunas
@@ -459,17 +423,16 @@ class StereographerApp(QMainWindow):
         elif measurement in ('Dip', 'Plunge'):
             min_value, max_value = 0, 90
         else:
-            min_value, max_value = -180, 180
+            min_value, max_value = 0, 180
 
-        # Armazena em uma lista todas as colunas do DataFrame que podem ser
-        # convertidas para float e estão no intervalo definido
+        # Armazena em uma lista todas as colunas do DataFrame que podem ser convertidas para float e estão no intervalo
+        # definido
         columns = self.file.columns.to_list()
         msr_columns = []
         for c in columns:
             try:
                 self.file[c] = self.file[c].astype(float, errors='raise')
-                if self.file[c].dropna().between(min_value, max_value).all() \
-                        and not self.file[c].dropna().empty:
+                if self.file[c].dropna().between(min_value, max_value).all() and not self.file[c].dropna().empty:
                     msr_columns.append(c)
             except:
                 pass
@@ -477,8 +440,8 @@ class StereographerApp(QMainWindow):
         return msr_columns
 
     def update_table(self):
-        """"Preenche a tabela da interface (StereographerApp.data_tbl) com os
-        dados das colunas selecionadas nas combo boxes."""
+        """"Preenche a tabela da interface (StereographerApp.data_tbl) com os dados das colunas selecionadas nas combo
+        boxes."""
 
         try:
             self.data_tbl.disconnect()
@@ -487,8 +450,7 @@ class StereographerApp(QMainWindow):
 
         msrType = self.measurementType_cmb.currentText()
 
-        # Pega as colunas do DataFrame com base nas comboBoxes. Se alguma delas
-        # estiver vazia, cancela e retorna.
+        # Pega as colunas do DataFrame com base nas comboBoxes. Se alguma delas estiver vazia, cancela e retorna.
         try:
             data = pandas.DataFrame()
             data['c1'] = self.file[self.orientationColumn_cmb.currentText()]
@@ -520,18 +482,16 @@ class StereographerApp(QMainWindow):
         except Exception as e:
             msg = QMessageBox(
                 parent=self,
-                text='Não foi possível atualizar a interface com as colunas '
-                     'especificadas. Verifique os dados de entrada e tente '
-                     'novamente.\n\n' + str(e)
+                text=f'Não foi possível atualizar a interface com as colunas especificadas. Verifique os dados de '
+                     f'entrada e tente novamente.\n\nERRO: {e}'
             )
             msg.setWindowTitle('Erro')
             msg.setIcon(QMessageBox.Icon.Critical)
             msg.exec()
 
     def measurementType_selected(self):
-        """Com base no tipo de medidas selecionado, atualiza os cabeçalhos da
-        tabela e as labels das comboBoxes e habilita ou desabilita a comboBox de
-         pitch e os elementos de personalização do gráfico na interface."""
+        """Com base no tipo de medidas selecionado, atualiza os cabeçalhos da tabela e as labels das comboBoxes e
+        habilita ou desabilita a comboBox de pitch e os elementos de personalização do gráfico na interface."""
 
         msrType = self.measurementType_cmb.currentText()
 
@@ -541,8 +501,7 @@ class StereographerApp(QMainWindow):
         self.orientationColumn_lbl.setText(msr1)
         self.dipColumn_lbl.setText(msr2)
 
-        # Habilita ou desabilita a comboBox de pitch conforme o tipo de medidas
-        # selecionado
+        # Habilita ou desabilita a comboBox de pitch conforme o tipo de medidas selecionado
         n = len(self.measurementType_dict[msrType])
         if n < 3:
             self.pitchColumn_cmb.setEnabled(False)
@@ -553,16 +512,13 @@ class StereographerApp(QMainWindow):
 
         # Define o número de colunas e os cabeçalhos da tabela
         self.data_tbl.setColumnCount(len(self.measurementType_dict[msrType]))
-        self.data_tbl.setHorizontalHeaderLabels(
-            self.measurementType_dict[msrType]
-        )
+        self.data_tbl.setHorizontalHeaderLabels(self.measurementType_dict[msrType])
 
         # Atualiza a tabela e checa os dados
         self.update_table()
         self.check_table_data()
 
-        # Habilita ou desabilita os elementos de personalização do gráfico de
-        # acordo com o tipo de medidas selecionado
+        # Habilita ou desabilita os elementos de personalização do gráfico de acordo com o tipo de medidas selecionado
         if msrType.startswith('Planos'):
             self.plotGreatCircles_chk.setChecked(True)
             self.plotGreatCircles_chk.setEnabled(True)
@@ -620,13 +576,11 @@ class StereographerApp(QMainWindow):
             pass
 
     def check_table_data(self):
-        """Verifica se os dados da tabela são válidos (todos float, mesma
-        quantia de medidas em todas as colunas, nenhuma coluna vazia, dados
-        dentro do intervalo aceito) e habilita ou desabilita o botão de plotagem
-         conforme o resultado da verificação."""
+        """Verifica se os dados da tabela são válidos (todos float, mesma quantia de medidas em todas as colunas,
+        nenhuma coluna vazia, dados dentro do intervalo aceito) e habilita ou desabilita o botão de plotagem conforme o
+        resultado da verificação."""
 
-        # Obtém os nomes das duas primeiras colunas de um dicionário com base no
-        # tipo de medida selecionado
+        # Obtém os nomes das duas primeiras colunas de um dicionário com base no tipo de medida selecionado
         msrType = self.measurementType_cmb.currentText()
         c1_name = self.measurementType_dict[msrType][0]
         c2_name = self.measurementType_dict[msrType][1]
@@ -634,15 +588,9 @@ class StereographerApp(QMainWindow):
         # Pega os dados da tabela e armazena em um DataFrame
         data = self.get_table_data()
         self.table = pandas.DataFrame()
-        self.table[c1_name] = (pandas.Series(data[0])
-                               if len(data[0]) > 0
-                               else numpy.nan)
-        self.table[c2_name] = (pandas.Series(data[1])
-                               if len(data[1]) > 0
-                               else numpy.nan)
-        self.table['Pitch'] = (pandas.Series(data[2])
-                               if len(data[2]) > 0
-                               else numpy.nan)
+        self.table[c1_name] = pandas.Series(data[0]) if len(data[0]) > 0 else numpy.nan
+        self.table[c2_name] = pandas.Series(data[1]) if len(data[1]) > 0 else numpy.nan
+        self.table['Pitch'] = pandas.Series(data[2]) if len(data[2]) > 0 else numpy.nan
 
         # Substitui células em branco por NaN e exclui colunas vazias
         self.table.replace(r'^\s*$', numpy.nan, inplace=True, regex=True)
@@ -651,21 +599,18 @@ class StereographerApp(QMainWindow):
         # Armazena os headers em uma lista
         columnList = self.table.columns.to_list()
 
-        # Se não houver nenhum header, isto é, nenhuma coluna, os dados são
-        # inválidos, e o botão de plotagem é desabilitado
+        # Se não houver nenhum header, isto é, nenhuma coluna, os dados são inválidos, e o botão de plotagem é
+        # desabilitado
         if len(columnList) == 0:
             self.columns_ok, self.rows_ok = False, False
-            self.plotStereonet_btn.setEnabled(True) \
-                    if (self.columns_ok and self.rows_ok) \
-                    else self.plotStereonet_btn.setEnabled(False)
-            self.addToStereonet_btn.setEnabled(True) \
-                    if (self.columns_ok and self.rows_ok
-                    and self.fig is not None) \
-                    else self.addToStereonet_btn.setEnabled(False)
+            self.plotStereonet_btn.setEnabled(True) if (self.columns_ok and self.rows_ok) \
+                else self.plotStereonet_btn.setEnabled(False)
+            self.addToStereonet_btn.setEnabled(True) if (self.columns_ok and self.rows_ok and self.fig is not None) \
+                else self.addToStereonet_btn.setEnabled(False)
             return
 
-        # Checa se os dados são float e se estão dentro do intervalo esperado
-        # (0-360° para orientação e 0-90° para ângulo de mergulho e pitch)
+        # Checa se os dados são float e se estão dentro do intervalo esperado (0-360° para orientação e 0-90° para
+        # ângulo de mergulho e pitch)
         self.columns_ok = True
         columns = []
         for c in columnList:
@@ -680,14 +625,12 @@ class StereographerApp(QMainWindow):
                 # Se der certo, adiciona os dados da coluna (tirando os nulos) a
                 # uma lista e verifica se estão dentro do intervalo
                 columns.append(self.table[c].dropna())
-                if not (self.table[c].dropna().between(0, max_value).all()
-                        and not self.table[c].empty):
+                if not (self.table[c].dropna().between(0, max_value).all() and not self.table[c].empty):
                     self.columns_ok = False
             except:
                 pass
 
-        # Compara o número de colunas no DataFrame com o número de colunas
-        # esperado para o tipo de medida
+        # Compara o número de colunas no DataFrame com o número de colunas esperado para o tipo de medida
         columnsExpected = len(self.measurementType_dict[msrType])
         # Se forem diferentes, os dados são inválidos
         if len(columns) != columnsExpected:
@@ -705,20 +648,17 @@ class StereographerApp(QMainWindow):
         self.table.dropna(how='all', axis='index', inplace=True)
         # Habilita ou desabilita o botão de plotagem conforme o resultado da
         # verificação
-        self.plotStereonet_btn.setEnabled(True) \
-            if (self.columns_ok and self.rows_ok) \
+        self.plotStereonet_btn.setEnabled(True) if (self.columns_ok and self.rows_ok) \
             else self.plotStereonet_btn.setEnabled(False)
-        self.addToStereonet_btn.setEnabled(True) \
-            if (self.columns_ok and self.rows_ok and self.fig is not None) \
-            else self.addToStereonet_btn.setEnabled(
-            False)
+        self.addToStereonet_btn.setEnabled(True) if (self.columns_ok and self.rows_ok and self.fig is not None) \
+            else self.addToStereonet_btn.setEnabled(False)
 
     def get_table_data(self):
         """Obtém os dados presentes na tabela da interface.
         
         Retorna:
-        - msr_list (list): Lista contendo outras três sublistas. Cada sublista
-        contém os dados de uma coluna da tabela (strings)."""
+        - msr_list (list): Lista contendo outras três sublistas. Cada sublista contém os dados de uma coluna da tabela
+        (strings)."""
 
         rows = self.data_tbl.rowCount()
         columns = self.data_tbl.columnCount()
@@ -749,11 +689,13 @@ class StereographerApp(QMainWindow):
                 greatCircleColor = self.greatCircleColor_btn.text()
                 poleColor = self.poleColor_btn.text()
                 poleMarker = self.markers[self.poleMarker_cmb.currentText()]
+                poleLabel = self.legendLabel_edt.text()
                 density_cmap = self.densityColors_cmb.currentText()
                 title = self.title_edt.text()
                 showGrid = self.showGrid_chk.isChecked()
                 projection = self.projections[self.grid_cmb.currentText()]
                 showColorbar = self.showColorbar_chk.isChecked()
+                showLegend = True
 
                 columns = self.table.columns.to_list()
 
@@ -765,10 +707,9 @@ class StereographerApp(QMainWindow):
                 if msrType.startswith('Planos: Dip direction'):
                     azimuths = azimuths - 90
 
-                if self.fig == None:
-                    self.fig, self.ax = mplstereonet.subplots(
-                        figsize=[6, 6], projection=projection
-                    )
+                if self.fig is None:
+                    size = [8, 6] if plotPoles and showLegend else [6, 6]
+                    self.fig, self.ax = mplstereonet.subplots(figsize=size, projection=projection)
 
                 if msrType.startswith('Linhas em planos'):
                     self.ax.plane(azimuths, angles, color=greatCircleColor)
@@ -813,7 +754,7 @@ class StereographerApp(QMainWindow):
                     )
                 if showGrid:
                     self.ax.grid(color='black', alpha=0.3)
-                if showColorbar:
+                if plotDensity and showColorbar:
                     self.fig.colorbar(density, pad=0.1, shrink=0.6)
 
                 self.ax.set_facecolor('white')
@@ -830,10 +771,22 @@ class StereographerApp(QMainWindow):
                         labels[i],
                         transform=self.ax.transAxes,
                         ha='center',
-                        va='center'
+                        va='center',
+                        fontsize=12
                     )
 
-                plt.tight_layout()
+                if newPlot:
+                    self.legend_markers, self.legend_labels = [], []
+
+                if plotPoles and showLegend:
+                    new_marker = Line2D([0], [0], color=poleColor, marker=poleMarker, linestyle='None')
+
+                    self.legend_markers.append(new_marker)
+                    self.legend_labels.append(poleLabel)
+
+                    self.ax.legend(self.legend_markers, self.legend_labels, loc='lower left', fontsize=12, bbox_to_anchor=(0.8,-0.1))
+                    plt.subplots_adjust(left=0.1, bottom=0.1, right=0.65)
+
                 # plt.show()
 
                 self.plotWindow = PlotWindow(plt, self)
@@ -846,8 +799,7 @@ class StereographerApp(QMainWindow):
         except Exception as e:
             msg = QMessageBox(
                 parent=self,
-                text='Não foi possível gerar o stereonet. Verifique os dados de'
-                     ' entrada e tente novamente.\n\n' + str(e)
+                text=f'Não foi possível gerar o stereonet. Verifique os dados de  entrada e tente novamente.\n\nERRO: {e}'
             )
             msg.setWindowTitle('Erro')
             msg.setIcon(QMessageBox.Icon.Critical)
